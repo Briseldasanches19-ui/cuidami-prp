@@ -1,0 +1,8 @@
+{
+  "name": "Cuidami Pro",
+  "description": "Plataforma clínica profesional nivel hospitalario con gestión de pacientes, roles, auditoría, IA clínica y herramientas especializadas.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
