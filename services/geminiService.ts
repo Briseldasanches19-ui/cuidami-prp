@@ -2,8 +2,7 @@ import { GoogleGenAI } from "@google/genai";
 import { Patient, Note, VitalSigns } from '../types';
 
 const getAiClient = () => {
-  const apiKey = import.meta.env.VITE_API_KEY;
-
+  const apiKey = process.env.API_KEY;
   if (!apiKey) {
     console.error("API Key not found in environment");
     return null;

@@ -209,7 +209,7 @@ export interface AppState {
   appointments: Appointment[];
   logs: AuditLog[];
   settings: AppSettings;
-  view: 'LOGIN' | 'DASHBOARD' | 'PATIENTS' | 'CALENDAR' | 'SETTINGS' | 'PATIENT_DETAIL';
+  view: 'LOGIN' | 'DASHBOARD' | 'PATIENTS' | 'CALENDAR' | 'SETTINGS' | 'PATIENT_DETAIL' | 'CHAT';
   activePatientId: string | null;
   modals: {
     newPatient: boolean;

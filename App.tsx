@@ -5,12 +5,12 @@ import {
   FileText, Plus, Search, AlertCircle, Save, Stethoscope, 
   Clipboard, HeartPulse, User as UserIcon, Shield, Baby, FilePlus, ChevronRight,
   Trash2, X, CheckCircle, Printer, Thermometer, Syringe, BedDouble, AlertTriangle, FileSignature, Sparkles, Droplet, Palette, RefreshCw, Image as ImageIcon,
-  Wifi, WifiOff, QrCode, ClipboardList
+  Wifi, WifiOff, QrCode, ClipboardList, Menu, MessageSquare, Send, Camera, Paperclip, File as FileIcon
 } from 'lucide-react';
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar 
 } from 'recharts';
-import { Role, Specialty, User, Patient, AppState, AuditLog, Note, VitalSigns, Appointment, AppSettings, Vaccine, Procedure } from './types';
+import { Role, Specialty, User, Patient, AppState, AuditLog, Note, VitalSigns, Appointment, AppSettings, Vaccine, Procedure, Document } from './types';
 import { generatePatientSummary } from './services/geminiService';
 
 // --- CONFIGURACIÓN INICIAL ---
@@ -68,66 +68,73 @@ const OfflineIndicator = ({ isOffline }: { isOffline: boolean }) => {
     return (
         <div className="bg-red-500 text-white text-xs font-bold text-center py-1 flex items-center justify-center space-x-2 fixed top-0 w-full z-[100]">
             <WifiOff size={14} />
-            <span>MODO OFFLINE: Sin conexión a internet. Los datos se guardarán localmente.</span>
+            <span>MODO OFFLINE: Sin conexión. Datos guardados localmente.</span>
         </div>
     );
 };
 
-// 1. Sidebar Adaptativo
-const Sidebar = ({ user, activeView, setView, onLogout, settings }: { user: User, activeView: string, setView: (v: any) => void, onLogout: () => void, settings: AppSettings }) => (
-  <div className="w-64 bg-slate-900 text-white h-screen flex flex-col fixed left-0 top-0 shadow-xl z-50 transition-colors print:hidden">
-    <div className="p-6 border-b border-slate-700 flex items-center space-x-3 mt-4">
-      <div 
-        className="p-2 rounded-lg shadow-lg overflow-hidden flex items-center justify-center w-10 h-10 bg-white"
-      >
-        {settings.logoUrl ? (
-            <img src={settings.logoUrl} alt="Logo" className="w-full h-full object-contain" />
-        ) : (
-            <Activity className="w-6 h-6" style={{ color: settings.primaryColor }} />
-        )}
-      </div>
-      <div className="overflow-hidden">
-        <h1 className="text-lg font-bold tracking-tight truncate w-36" title={settings.centerName}>{settings.centerName}</h1>
-        <p className="text-[10px] text-slate-400">Tu salud en las mejores manos</p>
-      </div>
-    </div>
-
-    <div className="p-6 border-b border-slate-800">
-       <div className="flex items-center space-x-3">
-        <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-lg font-bold text-white border border-slate-600" style={{ borderColor: settings.secondaryColor }}>
-          {user.name.charAt(0)}
+// 1. Sidebar Adaptativo (Responsive)
+const Sidebar = ({ user, activeView, setView, onLogout, settings, isOpen, onClose }: { user: User, activeView: string, setView: (v: any) => void, onLogout: () => void, settings: AppSettings, isOpen: boolean, onClose: () => void }) => (
+  <>
+    {/* Overlay for mobile */}
+    {isOpen && (
+        <div className="fixed inset-0 bg-black/50 z-40 md:hidden" onClick={onClose}></div>
+    )}
+    
+    <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 text-white shadow-xl transition-transform duration-300 ease-in-out transform ${isOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 md:static md:h-screen flex flex-col print:hidden`}>
+        <div className="p-6 border-b border-slate-700 flex items-center space-x-3 mt-4 relative">
+            <button onClick={onClose} className="absolute top-2 right-2 md:hidden text-slate-400"><X size={20}/></button>
+            <div 
+                className="p-2 rounded-lg shadow-lg overflow-hidden flex items-center justify-center w-10 h-10 bg-white shrink-0"
+            >
+                {settings.logoUrl ? (
+                    <img src={settings.logoUrl} alt="Logo" className="w-full h-full object-contain" />
+                ) : (
+                    <Activity className="w-6 h-6" style={{ color: settings.primaryColor }} />
+                )}
+            </div>
+            <div className="overflow-hidden">
+                <h1 className="text-lg font-bold tracking-tight truncate w-36" title={settings.centerName}>{settings.centerName}</h1>
+                <p className="text-[10px] text-slate-400">Tu salud en las mejores manos</p>
+            </div>
         </div>
-        <div>
-          <p className="text-sm font-medium truncate w-32 text-white">{user.name}</p>
-          <p className="text-xs text-slate-400 truncate w-32 opacity-80">{user.role === Role.DOCTOR ? 'Doctor(a)' : 'Enfermero(a)'}</p>
-        </div>
-      </div>
-    </div>
 
-    <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-      <SidebarItem icon={<Activity />} label="Dashboard" active={activeView === 'DASHBOARD'} onClick={() => setView('DASHBOARD')} color={settings.primaryColor} />
-      <SidebarItem icon={<Users />} label="Pacientes" active={activeView === 'PATIENTS' || activeView === 'PATIENT_DETAIL'} onClick={() => setView('PATIENTS')} color={settings.primaryColor} />
-      
-      <SidebarItem icon={<Settings />} label="Configuración" active={activeView === 'SETTINGS'} onClick={() => setView('SETTINGS')} color={settings.primaryColor} />
-    </nav>
-
-    <div className="p-4 bg-slate-900 border-t border-slate-800">
-      <button onClick={onLogout} className="w-full flex items-center justify-center space-x-2 bg-slate-800 hover:bg-slate-700 p-3 rounded-lg text-sm transition-colors text-slate-300 hover:text-white border border-slate-700 mb-4">
-        <LogOut className="w-4 h-4" />
-        <span>Salir</span>
-      </button>
-      
-      <div className="text-[10px] text-slate-500 text-center leading-tight space-y-1">
-        <p className="font-semibold text-slate-400">Cuidami Pro © {new Date().getFullYear()}</p>
-        <p>Tu salud en las mejores manos</p>
-        <div className="pt-2 border-t border-slate-800 mt-2">
-            <p>Creado por:</p>
-            <p className="font-bold text-slate-300">George Emmanuel Almonte Sanchez</p>
-            <p>Todos los derechos reservados</p>
+        <div className="p-6 border-b border-slate-800">
+        <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-lg font-bold text-white border border-slate-600" style={{ borderColor: settings.secondaryColor }}>
+            {user.name.charAt(0)}
+            </div>
+            <div>
+            <p className="text-sm font-medium truncate w-32 text-white">{user.name}</p>
+            <p className="text-xs text-slate-400 truncate w-32 opacity-80">{user.role === Role.DOCTOR ? 'Doctor(a)' : 'Enfermero(a)'}</p>
+            </div>
         </div>
-      </div>
+        </div>
+
+        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+            <SidebarItem icon={<Activity />} label="Dashboard" active={activeView === 'DASHBOARD'} onClick={() => { setView('DASHBOARD'); onClose(); }} color={settings.primaryColor} />
+            <SidebarItem icon={<Users />} label="Pacientes" active={activeView === 'PATIENTS' || activeView === 'PATIENT_DETAIL'} onClick={() => { setView('PATIENTS'); onClose(); }} color={settings.primaryColor} />
+            <SidebarItem icon={<MessageSquare />} label="Chat Médico" active={activeView === 'CHAT'} onClick={() => { setView('CHAT'); onClose(); }} color={settings.primaryColor} />
+            <SidebarItem icon={<Settings />} label="Configuración" active={activeView === 'SETTINGS'} onClick={() => { setView('SETTINGS'); onClose(); }} color={settings.primaryColor} />
+        </nav>
+
+        <div className="p-4 bg-slate-900 border-t border-slate-800">
+            <button onClick={onLogout} className="w-full flex items-center justify-center space-x-2 bg-slate-800 hover:bg-slate-700 p-3 rounded-lg text-sm transition-colors text-slate-300 hover:text-white border border-slate-700 mb-4">
+                <LogOut className="w-4 h-4" />
+                <span>Salir</span>
+            </button>
+            
+            <div className="text-[10px] text-slate-500 text-center leading-tight space-y-1">
+                <p className="font-semibold text-slate-400">Cuidami Pro © {new Date().getFullYear()}</p>
+                <div className="pt-2 border-t border-slate-800 mt-2">
+                    <p>Creado por:</p>
+                    <p className="font-bold text-slate-300">George Emmanuel Almonte Sanchez</p>
+                    <p>Todos los derechos reservados</p>
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
+  </>
 );
 
 const SidebarItem = ({ icon, label, active, onClick, color }: any) => (
@@ -262,7 +269,7 @@ const NewPatientModal = ({ onClose, onSave, settings }: { onClose: () => void, o
 
   return (
     <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden transform transition-all scale-100">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden transform transition-all scale-100 h-full md:h-auto overflow-y-auto">
         <div className="p-6 flex justify-between items-center text-white" style={{ backgroundColor: settings.primaryColor }}>
           <h2 className="text-xl font-bold flex items-center"><UserIcon className="mr-2"/> Registrar Nuevo Paciente</h2>
           <button onClick={onClose} className="hover:bg-white/20 p-2 rounded-full transition-colors"><X size={20}/></button>
@@ -424,6 +431,67 @@ const CalculatorModal = ({ onClose, settings }: { onClose: () => void, settings:
 
 // 3. Main Views
 
+const ChatView = ({ user, settings }: { user: User, settings: AppSettings }) => {
+    const [messages, setMessages] = useState<{id: string, text: string, sender: string, isMe: boolean, time: string}[]>([
+        {id: '1', text: 'Dr., tenemos los resultados del paciente Pérez.', sender: 'Enfermería', isMe: false, time: '10:30 AM'},
+        {id: '2', text: 'Perfecto, los reviso en un momento. ¿Cómo está la saturación?', sender: user.name, isMe: true, time: '10:32 AM'},
+        {id: '3', text: 'Estable en 98%. Sin novedad.', sender: 'Enfermería', isMe: false, time: '10:33 AM'},
+    ]);
+    const [input, setInput] = useState('');
+
+    const handleSend = () => {
+        if (!input.trim()) return;
+        setMessages([...messages, {
+            id: generateId(),
+            text: input,
+            sender: user.name,
+            isMe: true,
+            time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+        }]);
+        setInput('');
+    };
+
+    return (
+        <div className="max-w-4xl mx-auto h-[calc(100vh-140px)] flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-indigo-100 text-indigo-600 rounded-full"><MessageSquare size={20}/></div>
+                    <div>
+                        <h3 className="font-bold text-slate-800">Chat Médico Seguro</h3>
+                        <p className="text-xs text-slate-500">Canal: Enfermería General</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50">
+                {messages.map(msg => (
+                    <div key={msg.id} className={`flex ${msg.isMe ? 'justify-end' : 'justify-start'}`}>
+                        <div className={`max-w-[70%] p-3 rounded-2xl ${msg.isMe ? 'bg-teal-600 text-white rounded-tr-none' : 'bg-white border border-slate-200 text-slate-800 rounded-tl-none'}`} style={msg.isMe ? {backgroundColor: settings.primaryColor} : {}}>
+                            <p className="text-xs font-bold mb-1 opacity-80">{msg.sender}</p>
+                            <p className="text-sm">{msg.text}</p>
+                            <p className={`text-[10px] text-right mt-1 ${msg.isMe ? 'text-white/70' : 'text-slate-400'}`}>{msg.time}</p>
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            <div className="p-4 bg-white border-t border-slate-100 flex items-center space-x-2">
+                <button className="p-2 text-slate-400 hover:text-slate-600"><Paperclip size={20}/></button>
+                <input 
+                    className="flex-1 p-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    placeholder="Escriba un mensaje seguro..."
+                    value={input}
+                    onChange={e => setInput(e.target.value)}
+                    onKeyPress={e => e.key === 'Enter' && handleSend()}
+                />
+                <button onClick={handleSend} className="p-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700" style={{backgroundColor: settings.primaryColor}}>
+                    <Send size={20}/>
+                </button>
+            </div>
+        </div>
+    );
+};
+
 const PatientList = ({ patients, onSelectPatient, onNewPatient, user, onDeletePatient, settings }: { patients: Patient[], onSelectPatient: (id: string) => void, onNewPatient: () => void, user: User, onDeletePatient: (id: string) => void, settings: AppSettings }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -441,7 +509,7 @@ const PatientList = ({ patients, onSelectPatient, onNewPatient, user, onDeletePa
         </div>
         <button 
             onClick={onNewPatient} 
-            className="text-white px-6 py-3 rounded-xl flex items-center space-x-2 shadow-lg transition-transform transform hover:-translate-y-0.5 font-bold"
+            className="text-white px-6 py-3 rounded-xl flex items-center space-x-2 shadow-lg transition-transform transform hover:-translate-y-0.5 font-bold w-full md:w-auto justify-center"
             style={{ backgroundColor: settings.primaryColor }}
         >
           <Plus size={20} />
@@ -474,6 +542,7 @@ const PatientList = ({ patients, onSelectPatient, onNewPatient, user, onDeletePa
              <button onClick={onNewPatient} className="font-medium hover:underline" style={{ color: settings.primaryColor }}>Registrar ahora</button>
           </div>
         ) : (
+          <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead className="bg-slate-50 text-slate-500 text-xs font-bold uppercase tracking-wider">
               <tr>
@@ -488,12 +557,12 @@ const PatientList = ({ patients, onSelectPatient, onNewPatient, user, onDeletePa
                 <tr key={patient.id} className="hover:bg-slate-50 transition-colors cursor-pointer group" onClick={() => onSelectPatient(patient.id)}>
                   <td className="px-6 py-4">
                     <div className="flex items-center space-x-3">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white shadow-sm`} style={{ backgroundColor: patient.gender === 'F' ? '#f472b6' : '#60a5fa' }}>
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white shadow-sm shrink-0`} style={{ backgroundColor: patient.gender === 'F' ? '#f472b6' : '#60a5fa' }}>
                         {patient.fullName.charAt(0)}
                       </div>
-                      <div>
-                        <p className="font-bold text-slate-800 transition-colors" style={{ color: settings.secondaryColor }}>{patient.fullName}</p>
-                        <p className="text-xs text-slate-500">ID: {patient.identificationNumber || 'S/N'}</p>
+                      <div className="min-w-0">
+                        <p className="font-bold text-slate-800 transition-colors truncate" style={{ color: settings.secondaryColor }}>{patient.fullName}</p>
+                        <p className="text-xs text-slate-500 truncate">ID: {patient.identificationNumber || 'S/N'}</p>
                       </div>
                     </div>
                   </td>
@@ -521,6 +590,7 @@ const PatientList = ({ patients, onSelectPatient, onNewPatient, user, onDeletePa
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>
@@ -533,7 +603,7 @@ const PatientDetail = ({ patient, user, onUpdatePatient, onBack, settings, onOpe
   const isNurse = user.role === Role.NURSE;
   
   const defaultTab = isNurse ? 'PROCEDURES' : 'NOTES';
-  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'NOTES' | 'VITALS' | 'PEDIATRICS' | 'PROCEDURES'>(defaultTab);
+  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'NOTES' | 'VITALS' | 'PEDIATRICS' | 'PROCEDURES' | 'DOCUMENTS'>(defaultTab);
   
   const [newNote, setNewNote] = useState('');
   const [newVital, setNewVital] = useState<any>({ bpSystolic: '', bpDiastolic: '', heartRate: '', temp: '', oxygenSat: '', weight: '' });
@@ -597,7 +667,6 @@ const PatientDetail = ({ patient, user, onUpdatePatient, onBack, settings, onOpe
       alert("Signos vitales registrados");
   };
 
-  // Pediatría: Agregar Vacuna
   const handleAddVaccine = () => {
       const vName = prompt("Nombre de la Vacuna:");
       if (vName) {
@@ -614,7 +683,6 @@ const PatientDetail = ({ patient, user, onUpdatePatient, onBack, settings, onOpe
       }
   };
 
-  // Enfermería: Agregar Procedimiento
   const handleAddProcedure = () => {
       const pName = prompt("Procedimiento realizado:");
       if (pName) {
@@ -632,6 +700,25 @@ const PatientDetail = ({ patient, user, onUpdatePatient, onBack, settings, onOpe
           });
       }
   };
+  
+  // Manejo de Documentos (Parte 6.10)
+  const handleUploadDocument = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) {
+          const newDoc: Document = {
+              id: generateId(),
+              name: file.name,
+              type: 'OTHER',
+              date: new Date().toISOString(),
+              authorName: user.name,
+              url: URL.createObjectURL(file) // Simulación de URL local
+          };
+          onUpdatePatient({
+              ...patient,
+              documents: [...patient.documents, newDoc]
+          });
+      }
+  };
 
   const handlePrint = () => {
     window.print();
@@ -639,27 +726,27 @@ const PatientDetail = ({ patient, user, onUpdatePatient, onBack, settings, onOpe
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-20 print:p-0 print:max-w-none">
-      <div className="flex items-center justify-between mb-4 print:hidden">
-         <div className="flex items-center space-x-2">
+      <div className="flex flex-col md:flex-row items-center justify-between mb-4 print:hidden gap-4">
+         <div className="flex items-center space-x-2 w-full md:w-auto">
             <button onClick={onBack} className="p-2 hover:bg-slate-200 rounded-full transition-colors">
             <ChevronRight className="rotate-180 text-slate-600" size={24} />
             </button>
             <h2 className="text-xl font-bold text-slate-700">Volver a lista</h2>
          </div>
-         <div className="flex gap-2">
+         <div className="flex gap-2 w-full md:w-auto">
              <button 
                onClick={onOpenEmergencyCard}
-               className="flex items-center space-x-2 px-4 py-2 bg-red-50 text-red-600 border border-red-200 rounded-lg hover:bg-red-100 transition-colors font-bold"
+               className="flex-1 md:flex-none flex items-center justify-center space-x-2 px-4 py-2 bg-red-50 text-red-600 border border-red-200 rounded-lg hover:bg-red-100 transition-colors font-bold"
              >
                 <HeartPulse size={18} />
-                <span>Tarjeta Emergencia</span>
+                <span className="md:inline">Tarjeta Emergencia</span>
              </button>
              <button 
                onClick={handlePrint}
-               className="flex items-center space-x-2 px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition-colors"
+               className="flex-1 md:flex-none flex items-center justify-center space-x-2 px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition-colors"
              >
                 <Printer size={18} />
-                <span>Imprimir Reporte</span>
+                <span className="md:inline">Imprimir</span>
              </button>
          </div>
       </div>
@@ -678,19 +765,19 @@ const PatientDetail = ({ patient, user, onUpdatePatient, onBack, settings, onOpe
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 relative overflow-hidden print:shadow-none print:border-none">
         <div className="flex flex-col md:flex-row justify-between gap-6 print:flex-row">
           <div className="flex items-start space-x-5">
-            <div className={`w-24 h-24 rounded-2xl flex items-center justify-center text-4xl font-bold text-white shadow-lg print:border print:border-slate-300 print:text-black print:bg-white`} style={{ backgroundColor: patient.gender === 'F' ? '#f472b6' : '#60a5fa' }}>
+            <div className={`w-24 h-24 rounded-2xl flex items-center justify-center text-4xl font-bold text-white shadow-lg print:border print:border-slate-300 print:text-black print:bg-white shrink-0`} style={{ backgroundColor: patient.gender === 'F' ? '#f472b6' : '#60a5fa' }}>
               {patient.fullName.charAt(0)}
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-slate-800 mb-2">{patient.fullName}</h1>
-              <div className="flex gap-4 text-sm text-slate-600 font-medium">
+              <h1 className="text-2xl md:text-3xl font-bold text-slate-800 mb-2 leading-tight">{patient.fullName}</h1>
+              <div className="flex flex-wrap gap-2 text-sm text-slate-600 font-medium">
                 <span className="bg-slate-100 px-3 py-1 rounded-lg print:border print:border-slate-200">ID: {patient.identificationNumber}</span>
                 <span className="bg-slate-100 px-3 py-1 rounded-lg print:border print:border-slate-200">{getAge(patient.dob)} años</span>
-                <span className="bg-slate-100 px-3 py-1 rounded-lg print:border print:border-slate-200">{patient.gender === 'M' ? 'Masculino' : patient.gender === 'F' ? 'Femenino' : 'Otro'}</span>
+                <span className="bg-slate-100 px-3 py-1 rounded-lg print:border print:border-slate-200">{patient.gender === 'M' ? 'Masc.' : patient.gender === 'F' ? 'Fem.' : 'Otro'}</span>
               </div>
               <p className="mt-3 text-red-500 text-sm font-semibold flex items-center">
                  <AlertTriangle size={14} className="mr-1"/>
-                 Alergias: {patient.allergies.length > 0 ? patient.allergies.join(', ') : 'Ninguna registrada'}
+                 Alergias: {patient.allergies.length > 0 ? patient.allergies.join(', ') : 'Ninguna'}
               </p>
             </div>
           </div>
@@ -699,7 +786,7 @@ const PatientDetail = ({ patient, user, onUpdatePatient, onBack, settings, onOpe
              {user.role === Role.DOCTOR && (
                 <button 
                 onClick={handleGenerateSummary}
-                className="px-6 py-3 text-white rounded-xl hover:shadow-lg transition-all flex items-center justify-center space-x-2 font-bold transform hover:-translate-y-0.5"
+                className="w-full md:w-auto px-6 py-3 text-white rounded-xl hover:shadow-lg transition-all flex items-center justify-center space-x-2 font-bold transform hover:-translate-y-0.5"
                 style={{ background: `linear-gradient(to right, ${settings.primaryColor}, ${settings.secondaryColor})` }}
                 disabled={loadingAi}
                 >
@@ -716,7 +803,7 @@ const PatientDetail = ({ patient, user, onUpdatePatient, onBack, settings, onOpe
         <div className="bg-indigo-50 border border-indigo-200 p-6 rounded-xl animate-fade-in relative shadow-sm print:hidden">
           <button onClick={() => setAiSummary(null)} className="absolute top-4 right-4 text-indigo-400 hover:text-indigo-600"><X size={20}/></button>
           <div className="flex items-start space-x-3">
-            <div className="bg-indigo-100 p-2 rounded-lg">
+            <div className="bg-indigo-100 p-2 rounded-lg shrink-0">
                 <Sparkles className="text-indigo-600" size={24} />
             </div>
             <div className="flex-1">
@@ -730,28 +817,29 @@ const PatientDetail = ({ patient, user, onUpdatePatient, onBack, settings, onOpe
       )}
 
       {/* Navigation Tabs - Print Hidden */}
-      <div className="flex space-x-1 bg-slate-200 p-1 rounded-xl w-fit print:hidden overflow-x-auto max-w-full">
+      <div className="flex space-x-1 bg-slate-200 p-1 rounded-xl w-full md:w-fit print:hidden overflow-x-auto">
         {user.role === Role.DOCTOR && (
-            <button onClick={() => setActiveTab('NOTES')} className={`px-6 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${activeTab === 'NOTES' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500'}`}>Notas Clínicas</button>
+            <button onClick={() => setActiveTab('NOTES')} className={`flex-1 md:flex-none px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${activeTab === 'NOTES' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500'}`}>Notas</button>
         )}
-        <button onClick={() => setActiveTab('VITALS')} className={`px-6 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${activeTab === 'VITALS' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500'}`}>Signos Vitales</button>
+        <button onClick={() => setActiveTab('VITALS')} className={`flex-1 md:flex-none px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${activeTab === 'VITALS' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500'}`}>Signos</button>
         
-        {/* Tab de Pediatría Dinámico */}
         {isPediatrics && (
-             <button onClick={() => setActiveTab('PEDIATRICS')} className={`px-6 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${activeTab === 'PEDIATRICS' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500'}`}>
-                 <Baby size={16} className="inline mr-1"/> Pediatría
+             <button onClick={() => setActiveTab('PEDIATRICS')} className={`flex-1 md:flex-none px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${activeTab === 'PEDIATRICS' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500'}`}>
+                 <Baby size={16} className="inline mr-1"/> Pedi
              </button>
         )}
 
-        {/* Tab de Enfermería / Procedimientos */}
-        <button onClick={() => setActiveTab('PROCEDURES')} className={`px-6 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${activeTab === 'PROCEDURES' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500'}`}>
-            <Syringe size={16} className="inline mr-1"/> Procedimientos
+        <button onClick={() => setActiveTab('PROCEDURES')} className={`flex-1 md:flex-none px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${activeTab === 'PROCEDURES' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500'}`}>
+            <Syringe size={16} className="inline mr-1"/> Proc
+        </button>
+
+        <button onClick={() => setActiveTab('DOCUMENTS')} className={`flex-1 md:flex-none px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${activeTab === 'DOCUMENTS' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500'}`}>
+            <FileIcon size={16} className="inline mr-1"/> Docs
         </button>
       </div>
 
-      {/* CONTENIDO DINÁMICO SEGÚN ROL */}
+      {/* CONTENIDO DINÁMICO */}
 
-      {/* Módulo de Notas (Diferente para Doctor/Nurse) */}
       {(activeTab === 'NOTES' || activeTab === 'OVERVIEW') && (
         <div className="grid grid-cols-1 gap-6">
             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm print:hidden">
@@ -766,14 +854,14 @@ const PatientDetail = ({ patient, user, onUpdatePatient, onBack, settings, onOpe
                     value={newNote}
                     onChange={(e) => setNewNote(e.target.value)}
                 />
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                     <div className="text-xs text-slate-400 flex items-center">
                         <Shield size={12} className="mr-1"/> Firma Digital Habilitada
                     </div>
                     <button 
                         onClick={handleSaveNote}
                         disabled={!newNote.trim()}
-                        className="text-white px-6 py-2 rounded-lg font-bold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg flex items-center space-x-2"
+                        className="w-full md:w-auto text-white px-6 py-2 rounded-lg font-bold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg flex items-center justify-center space-x-2"
                         style={{ backgroundColor: settings.primaryColor }}
                     >
                         <FileSignature size={18}/>
@@ -803,7 +891,6 @@ const PatientDetail = ({ patient, user, onUpdatePatient, onBack, settings, onOpe
                         </div>
                         <p className="text-slate-600 leading-relaxed whitespace-pre-line border-l-4 pl-4" style={{ borderColor: note.role === Role.DOCTOR ? '#3b82f6' : '#14b8a6' }}>{note.content}</p>
                         
-                        {/* Visualización de Firma Digital */}
                         {note.signed && (
                             <div className="mt-4 pt-2 border-t border-dashed border-slate-200 flex justify-end">
                                 <div className="text-right">
@@ -819,11 +906,9 @@ const PatientDetail = ({ patient, user, onUpdatePatient, onBack, settings, onOpe
         </div>
       )}
 
-      {/* Módulo Pediátrico Especializado */}
       {activeTab === 'PEDIATRICS' && (
           <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Vacunación */}
                   <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
                       <div className="flex justify-between items-center mb-4">
                           <h4 className="font-bold text-slate-800 flex items-center"><Syringe size={20} className="mr-2 text-pink-500"/> Esquema de Vacunación</h4>
@@ -843,7 +928,6 @@ const PatientDetail = ({ patient, user, onUpdatePatient, onBack, settings, onOpe
                       )}
                   </div>
 
-                  {/* Percentiles (Simulado) */}
                    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
                       <h4 className="font-bold text-slate-800 flex items-center mb-4"><Baby size={20} className="mr-2 text-blue-500"/> Desarrollo (Percentiles)</h4>
                       <div className="bg-slate-50 p-4 rounded-xl text-center">
@@ -856,7 +940,6 @@ const PatientDetail = ({ patient, user, onUpdatePatient, onBack, settings, onOpe
           </div>
       )}
 
-      {/* Módulo de Procedimientos */}
       {activeTab === 'PROCEDURES' && (
           <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
              <div className="flex justify-between items-center mb-6">
@@ -885,10 +968,46 @@ const PatientDetail = ({ patient, user, onUpdatePatient, onBack, settings, onOpe
           </div>
       )}
 
-      {/* Módulo de Signos Vitales */}
+      {/* Módulo de Documentos (Parte 6.10) */}
+      {activeTab === 'DOCUMENTS' && (
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+             <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                 <h4 className="font-bold text-slate-800 flex items-center"><FileIcon size={20} className="mr-2 text-blue-600"/> Documentos y Adjuntos</h4>
+                 <label className="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-blue-700 cursor-pointer flex items-center space-x-2 print:hidden">
+                     <Camera size={16} />
+                     <span>Escanear / Subir</span>
+                     <input type="file" className="hidden" accept="image/*,.pdf" capture="environment" onChange={handleUploadDocument} />
+                 </label>
+             </div>
+
+             {patient.documents.length === 0 ? (
+                 <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-xl bg-slate-50">
+                     <Camera className="mx-auto text-slate-300 mb-2" size={32}/>
+                     <p className="text-slate-500 font-medium">No hay documentos adjuntos</p>
+                     <p className="text-xs text-slate-400">Tome fotos de recetas, analíticas o estudios.</p>
+                 </div>
+             ) : (
+                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                     {patient.documents.map(doc => (
+                         <div key={doc.id} className="border border-slate-200 p-3 rounded-xl hover:shadow-md transition-shadow relative group">
+                             <div className="h-24 bg-slate-100 rounded-lg mb-2 flex items-center justify-center overflow-hidden">
+                                {doc.url ? (
+                                    <img src={doc.url} alt="doc" className="w-full h-full object-cover" />
+                                ) : (
+                                    <FileText className="text-slate-400" />
+                                )}
+                             </div>
+                             <p className="text-sm font-bold text-slate-800 truncate">{doc.name}</p>
+                             <p className="text-xs text-slate-500">{new Date(doc.date).toLocaleDateString()}</p>
+                         </div>
+                     ))}
+                 </div>
+             )}
+          </div>
+      )}
+
       {activeTab === 'VITALS' && (
         <div className="space-y-6">
-            {/* Input de Signos Vitales - Visible para todos, prioritario para Enfermería */}
             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm print:hidden">
                 <h4 className="font-bold text-slate-800 mb-4 flex items-center">
                     <Activity className="mr-2" style={{ color: settings.primaryColor }}/> 
@@ -935,11 +1054,10 @@ const PatientDetail = ({ patient, user, onUpdatePatient, onBack, settings, onOpe
                 )}
             </div>
 
-            {/* Tabla Histórica para Impresión */}
             {patient.vitals.length > 0 && (
-                <div className="mt-6">
+                <div className="mt-6 overflow-x-auto">
                     <h3 className="font-bold text-slate-800 mb-2">Tabla de Registros</h3>
-                    <table className="w-full text-left text-sm border-collapse border border-slate-200">
+                    <table className="w-full text-left text-sm border-collapse border border-slate-200 min-w-[600px]">
                         <thead className="bg-slate-100">
                             <tr>
                                 <th className="border p-2">Fecha</th>
@@ -988,8 +1106,8 @@ const LoginScreen = ({ onLogin, settings, onUpdateSettings }: { onLogin: (name: 
         <div className="absolute top-[-10%] left-[-10%] w-96 h-96 rounded-full blur-[120px] opacity-20" style={{ backgroundColor: settings.primaryColor }}></div>
         <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 rounded-full blur-[120px] opacity-20" style={{ backgroundColor: settings.secondaryColor }}></div>
   
-        <div className="bg-white w-full max-w-md rounded-3xl p-10 shadow-2xl relative z-10 animate-fade-in">
-          <div className="text-center mb-10">
+        <div className="bg-white w-full max-w-md rounded-3xl p-8 md:p-10 shadow-2xl relative z-10 animate-fade-in">
+          <div className="text-center mb-8">
             <div className="w-24 h-24 rounded-2xl flex items-center justify-center mx-auto mb-6 transform rotate-3 shadow-lg bg-slate-50 overflow-hidden">
                {settings.logoUrl ? (
                    <img src={settings.logoUrl} className="w-full h-full object-contain" alt="logo"/>
@@ -997,7 +1115,7 @@ const LoginScreen = ({ onLogin, settings, onUpdateSettings }: { onLogin: (name: 
                    <Activity className="w-10 h-10" style={{ color: settings.primaryColor }} />
                )}
             </div>
-            <h1 className="text-3xl font-extrabold text-slate-900 mb-2">{settings.centerName}</h1>
+            <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 mb-2">{settings.centerName}</h1>
             <p className="text-slate-500 font-medium text-lg">Tu salud en las mejores manos</p>
           </div>
   
@@ -1063,7 +1181,6 @@ const LoginScreen = ({ onLogin, settings, onUpdateSettings }: { onLogin: (name: 
              <p className="text-[10px] text-slate-400 mt-1">Todos los derechos reservados</p>
           </div>
 
-          {/* Quick Theme Toggle for Login */}
           <div className="mt-6 pt-6 border-t border-slate-100">
              <details className="text-xs text-slate-400">
                  <summary className="cursor-pointer hover:text-slate-600">Personalizar Pantalla de Acceso</summary>
@@ -1081,7 +1198,6 @@ const LoginScreen = ({ onLogin, settings, onUpdateSettings }: { onLogin: (name: 
     );
 };
 
-// 4. Config Screen
 const SettingsView = ({ settings, onUpdateSettings, onClearData, onFactoryReset }: { settings: AppSettings, onUpdateSettings: (s: AppSettings) => void, onClearData: () => void, onFactoryReset: () => void }) => (
   <div className="max-w-3xl mx-auto py-8 pb-32">
     <h2 className="text-2xl font-bold text-slate-800 mb-6">Personalización y Configuración</h2>
@@ -1146,7 +1262,6 @@ const SettingsView = ({ settings, onUpdateSettings, onClearData, onFactoryReset 
        </div>
     </div>
 
-    {/* ZONA DE PELIGRO */}
     <div className="bg-red-50 rounded-xl shadow-sm border border-red-100 overflow-hidden mb-6">
       <div className="p-6 border-b border-red-100">
         <h3 className="font-bold text-red-700 mb-2 flex items-center"><AlertCircle className="mr-2" size={18}/> Zona de Peligro / Solución de Problemas</h3>
@@ -1201,6 +1316,9 @@ const App: React.FC = () => {
     modals: { newPatient: false, calculator: false, emergencyCard: false },
     isOffline: !navigator.onLine
   });
+  
+  // Responsive Sidebar State
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Offline Detection
   useEffect(() => {
@@ -1221,7 +1339,6 @@ const App: React.FC = () => {
       try {
         const parsed = JSON.parse(stored);
         if (parsed.patients) {
-            // Migración de datos si faltan campos nuevos (Parte 6)
             const migratedPatients = parsed.patients.map((p: any) => ({
                 ...p,
                 vaccines: p.vaccines || [],
@@ -1239,9 +1356,7 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // Auto-save logic
   useEffect(() => {
-    // Save even on login screen if settings change
     localStorage.setItem('cuidami_v2_data', JSON.stringify({ 
         patients: state.patients, 
         logs: state.logs,
@@ -1314,9 +1429,6 @@ const App: React.FC = () => {
     }
   };
 
-  // --- RENDERING ---
-
-  // Login Screen
   if (!state.currentUser) {
     return (
         <LoginScreen 
@@ -1339,41 +1451,49 @@ const App: React.FC = () => {
         setView={(v: any) => setState(prev => ({...prev, view: v}))} 
         onLogout={() => setState(prev => ({...prev, currentUser: null, view: 'LOGIN'}))}
         settings={state.settings}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
       />
       
-      <main className="flex-1 ml-64 transition-all pb-10 print:ml-0 print:pb-0">
-        <header className="bg-white border-b border-slate-100 sticky top-0 z-40 px-8 py-4 flex justify-between items-center shadow-sm print:hidden">
-           <h1 className="text-xl font-bold text-slate-800">
-             {state.view === 'DASHBOARD' && 'Panel General'}
-             {state.view === 'PATIENTS' && 'Pacientes'}
-             {state.view === 'PATIENT_DETAIL' && 'Historia Clínica'}
-             {state.view === 'SETTINGS' && 'Configuración'}
-           </h1>
+      <main className="flex-1 transition-all duration-300 md:ml-64 pb-10 print:ml-0 print:pb-0 w-full">
+        <header className="bg-white border-b border-slate-100 sticky top-0 z-40 px-4 md:px-8 py-4 flex justify-between items-center shadow-sm print:hidden">
+           <div className="flex items-center space-x-4">
+               <button className="md:hidden text-slate-500 hover:text-slate-700" onClick={() => setSidebarOpen(true)}>
+                   <Menu size={24} />
+               </button>
+               <h1 className="text-lg md:text-xl font-bold text-slate-800 truncate">
+                 {state.view === 'DASHBOARD' && 'Panel General'}
+                 {state.view === 'PATIENTS' && 'Pacientes'}
+                 {state.view === 'PATIENT_DETAIL' && 'Historia Clínica'}
+                 {state.view === 'SETTINGS' && 'Configuración'}
+                 {state.view === 'CHAT' && 'Mensajería'}
+               </h1>
+           </div>
            <div className="flex items-center space-x-3">
              <button 
                onClick={() => setState(prev => ({...prev, modals: {...prev.modals, calculator: true}}))}
                className="flex items-center space-x-2 bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-2 rounded-lg transition-colors font-medium text-sm" 
              >
                <Stethoscope size={18}/>
-               <span>Herramientas</span>
+               <span className="hidden md:inline">Herramientas</span>
              </button>
            </div>
         </header>
 
-        <div className="p-8 print:p-0">
+        <div className="p-4 md:p-8 print:p-0">
           {state.view === 'DASHBOARD' && (
              <div className="animate-fade-in max-w-5xl mx-auto">
                 <div 
-                    className="rounded-2xl p-8 text-white mb-8 shadow-xl"
+                    className="rounded-2xl p-6 md:p-8 text-white mb-8 shadow-xl"
                     style={{ background: `linear-gradient(135deg, ${state.settings.primaryColor}, ${state.settings.secondaryColor})` }}
                 >
-                    <h2 className="text-3xl font-bold mb-2">Hola, {state.currentUser.name}</h2>
+                    <h2 className="text-2xl md:text-3xl font-bold mb-2">Hola, {state.currentUser.name}</h2>
                     <p className="opacity-90 mb-6">Bienvenido a {state.settings.centerName}.</p>
-                    <div className="flex gap-4">
-                        <button onClick={() => setState(prev => ({...prev, view: 'PATIENTS'}))} className="bg-white text-slate-900 px-6 py-3 rounded-xl font-bold transition-all shadow-lg hover:bg-slate-50">
+                    <div className="flex flex-col md:flex-row gap-4">
+                        <button onClick={() => setState(prev => ({...prev, view: 'PATIENTS'}))} className="bg-white text-slate-900 px-6 py-3 rounded-xl font-bold transition-all shadow-lg hover:bg-slate-50 text-center">
                             Ver Pacientes
                         </button>
-                        <button onClick={() => setState(prev => ({...prev, modals: {...prev.modals, newPatient: true}}))} className="bg-black/20 hover:bg-black/30 text-white px-6 py-3 rounded-xl font-bold transition-all backdrop-blur-sm border border-white/10">
+                        <button onClick={() => setState(prev => ({...prev, modals: {...prev.modals, newPatient: true}}))} className="bg-black/20 hover:bg-black/30 text-white px-6 py-3 rounded-xl font-bold transition-all backdrop-blur-sm border border-white/10 text-center">
                             Registrar Nuevo
                         </button>
                     </div>
@@ -1390,6 +1510,10 @@ const App: React.FC = () => {
                     </div>
                 </div>
              </div>
+          )}
+
+          {state.view === 'CHAT' && (
+              <ChatView user={state.currentUser} settings={state.settings} />
           )}
 
           {state.view === 'PATIENTS' && (
